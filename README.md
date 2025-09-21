@@ -4,6 +4,8 @@
 
 懒得写，就是一个可以简单运行的窗口DEMO
 
+依赖项用不了，我没上传中央仓库
+
 ````java
 
 import org.useless.uui.Color;
