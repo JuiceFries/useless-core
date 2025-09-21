@@ -1,0 +1,22 @@
+useless-core
+Copyright (c) 2023 JuiceFries
+
+This software includes components from the following third-party projects:
+
+- LWJGL (Lightweight Java Game Library) - BSD-3 License
+  https://www.lwjgl.org/license
+
+- GLFW (OpenGL Framework) - MIT License
+  https://www.glfw.org/license.html
+
+- NanoVG - Zlib License
+  https://github.com/memononen/nanovg#license
+
+- STB Image - MIT License
+  https://github.com/nothings/stb/blob/master/stb_image.h
+
+- JetBrains Annotations - Apache 2.0 License
+  https://github.com/Jetbrains/java-annotations
+
+- Source Han Sans (思源黑体) - SIL Open Font License 1.1
+  https://github.com/adobe-fonts/source-han-sans
