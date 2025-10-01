@@ -1,16 +1,20 @@
-import org.useless.uui.Color;
-import org.useless.uui.Window;
+import org.useless.gui.template.container.Window;
+import org.useless.gui.template.control.TextField;
+import org.useless.gui.uir.TintStyle;
+import org.useless.gui.uir.UIManager;
+import org.useless.gui.uir.UselessCheck;
 
 public class Main {
-    public static void main(String[] args) {
-        Window window = new Window("窗口"); // 创建窗口并命名
-        window.setSize(800, 600); // 设置窗口大小
-        window.setLocation(null); // 设置窗口居中
-        window.setVisible(true); // 设置窗口可见
-        window.setBackground(Color.NULL); // 设置窗口透明
-        window.drawing(drawing -> { // 绘图命令
-            drawing.setColor(Color.RED); // 设置颜色属性
-            drawing.drawTriangle(0.0f,0.0f,400.0f,600.0f,800.0f,0.0f); //画个图形
-        });
+    public static void main(String[] args) throws UselessCheck {
+        UIManager.setUIStyle(new TintStyle());
+        var window = new Window("窗口");
+        UIManager.applyTo(window);
+        window.setSize(800,600);
+        window.setLocation(null);
+        window.setVisible(true);
+        TextField textField = new TextField();
+        textField.setText("hhh");
+        textField.setBounds(0,0, window.getWidth(), 60);
+        window.add(textField);
     }
 }
