@@ -1,5 +1,7 @@
 package org.useless.gui.font;
 
+import static org.useless.gui.font.FontRegistry.getFont;
+
 /**
  * 字体数据类
  */
@@ -8,8 +10,8 @@ public class Font {
     private final Style style;
     private final int size;
 
-    public static final String DEFAULT = "DEFAULT";
-    public static final String SIM_SUN = "SIM_SUN";
+    public static final String DEFAULT = "思源黑体";
+    public static final String SIM_SUN = "霞鹜文楷";
 
     public Font(String name, Style style, int size) {
         this.name = name;
@@ -39,14 +41,14 @@ public class Font {
      * 验证字体是否可用
      */
     public boolean isValid() {
-        return FontRegistry.getFont(name) != null;
+        return getFont(name) != null;
     }
 
     /**
      * 获取可用的字体名称（如果请求的字体不存在则返回默认字体）
      */
     public String getAvailableName() {
-        return FontRegistry.getFont(name) != null ? name : DEFAULT;
+        return getFont(name) != null ? name : DEFAULT;
     }
 
 }

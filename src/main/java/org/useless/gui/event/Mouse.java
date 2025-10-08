@@ -51,4 +51,5 @@ public interface Mouse extends Event{
 
     void scrollEvent(int data);
 
+    void isRelease(boolean release);
 }

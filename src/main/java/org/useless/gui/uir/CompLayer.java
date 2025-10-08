@@ -1,7 +1,7 @@
 package org.useless.gui.uir;
 
 import org.useless.gui.drawing.Drawing;
-import org.useless.gui.uir.annotation.FullName;
+import org.useless.annotation.FullName;
 
 /**
  * 组件渲染层

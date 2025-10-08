@@ -15,6 +15,7 @@ import org.useless.gui.font.Font;
 /**
  * 没啥卵用懒得写了
  */
+@Deprecated(since = "0.0.3")
 public class Button implements Control {
 
     private Location location = new Location(10,10);
@@ -75,12 +76,6 @@ public class Button implements Control {
             drawing.drawRoundedRectangle(getX(), getY(), getWidth(), getHeight(), getArcWidth(), getArcHeight());
             drawing.setWireFrame(false);
         }
-        drawing.setLineWidth(2f);
-        drawing.setColor(Color.RED);
-        drawing.drawLine(getX() + ((float) getWidth() /2),
-                getY(),getX()+((float) getWidth() /2),
-                getY()+getHeight()
-        );
 
         drawing.setColor(Color.WHITE);
         drawing.setFont(font);

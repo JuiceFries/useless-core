@@ -2,7 +2,7 @@ package org.useless.gui.uir;
 
 import java.util.function.Consumer;
 import org.useless.gui.drawing.Drawing;
-import org.useless.gui.uir.annotation.FullName;
+import org.useless.annotation.FullName;
 
 /**
  * 绘图层

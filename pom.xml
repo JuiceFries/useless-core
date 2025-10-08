@@ -6,12 +6,12 @@
 
     <groupId>org.useless</groupId>
     <artifactId>useless-core</artifactId>
-    <version>0.0.3-Stable</version>
+    <version>0.0.4-Beta</version>
 
     <name>useless-core</name>
     <description>
         A lightweight Java UI framework based on LWJGL and NanoVG /
-        基于 LWJGL 和 NanoVG 的轻量级 Java UI 框架
+        基于 LWJGL 和 NanoVG 的Demo Java UI 框架
     </description>
 
     <distributionManagement>
@@ -155,6 +155,13 @@
             <artifactId>lwjgl-stb</artifactId>
             <classifier>${lwjgl.natives}</classifier>
             <scope>runtime</scope>
+        </dependency>
+
+        <!-- json解析 -->
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.10.1</version>
         </dependency>
 
         <!-- 注解库保留 -->

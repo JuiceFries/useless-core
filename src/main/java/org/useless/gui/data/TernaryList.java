@@ -27,7 +27,6 @@ public class TernaryList<T1, T2, T3> implements Ternary<T1, T2, T3>, Serializabl
         size = 0;
     }
 
-    // 安全构造器 - 从现有三元组初始化
     public TernaryList(Ternary<T1, T2, T3> other) {
         this(other.size());
         addAll(other);

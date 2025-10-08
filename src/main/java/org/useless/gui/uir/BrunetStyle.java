@@ -11,7 +11,7 @@ public class BrunetStyle implements Style {
 
     @Override
     public void apply(@NotNull Template target) {
-        target.setBackground(new Color(69, 69, 69));
+        target.setBackground(new Color(30, 30, 30));
     }
 
     @Override

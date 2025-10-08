@@ -1,4 +1,4 @@
-package org.useless.gui.uir.annotation;
+package org.useless.annotation;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
@@ -14,8 +14,17 @@ import static java.lang.annotation.ElementType.PACKAGE;
 import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.ElementType.TYPE;
 
+/**
+ * 用以表示对用方法或类是否固定
+ */
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 @Target(value={CONSTRUCTOR, FIELD, LOCAL_VARIABLE, METHOD, PACKAGE, MODULE, PARAMETER, TYPE})
-public @interface Useless {
+public @interface Fixed {
+
+    /**
+     * 用于表示该API或方法只需固定多久
+     */
+    String continuous() default "~1-Beta";
+
 }

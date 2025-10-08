@@ -1,45 +1,27 @@
 package org.useless.gui.uir;
 
-import java.io.InputStream;
 import org.useless.gui.template.Template;
-import org.useless.gui.picture.ImageLoadException;
-import org.useless.gui.picture.ImageLoader;
 import org.useless.gui.picture.Picture;
-import org.useless.gui.uir.annotation.Useless;
+import org.useless.gui.exception.UselessCheck;
+import org.useless.annotation.Useless;
+import org.useless.io.ListLoader;
 
-public class UIManager {
+public final class UIManager {
 
-    public  static Picture default16xIcon;
-    public  static Picture default32xIcon;
-    public  static Picture default64xIcon;
+    public final static Picture default16xIcon;
+    public final static Picture default32xIcon;
+    public final static Picture default64xIcon;
+    public final static Picture juice_fries;
     static {
         try {
-            // 读取资源为字节数组，然后用loadFromMemory
-            default16xIcon = loadResourceAsPicture("picture/di_16x16.png");
-            default32xIcon = loadResourceAsPicture("picture/di_32x32.png");
-            default64xIcon = loadResourceAsPicture("picture/di_64x64.png");
+            ListLoader.initializeLoading();
+            default16xIcon = ListLoader.getPicture("di_16x");
+            default32xIcon = ListLoader.getPicture("di_32x");
+            default64xIcon = ListLoader.getPicture("di_64x");
+            juice_fries = ListLoader.getPicture("JuiceFries");
 
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             throw new RuntimeException("默认图标加载失败:" + e);
-        }
-    }
-
-    private static Picture loadResourceAsPicture(String resourcePath) throws ImageLoadException {
-        try {
-            InputStream is = UIManager.class.getResourceAsStream("/" + resourcePath);
-            if (is == null) {
-                throw new ImageLoadException("资源不存在: /" + resourcePath);
-            }
-
-            byte[] imageData = is.readAllBytes();
-            is.close();
-
-            return ImageLoader.loadFromMemory(imageData, resourcePath);
-
-        } catch (ImageLoadException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new ImageLoadException("资源加载失败: " + resourcePath, e);
         }
     }
 
@@ -53,7 +35,7 @@ public class UIManager {
     /**
      * 设置UI样式
      * @param style 样式
-     * @throws UselessCheck style不能=null !
+     * @throws org.useless.gui.exception.UselessCheck style不能=null !
      */
 
     public static void setUIStyle (Style style) throws UselessCheck {

@@ -2,9 +2,15 @@ package org.useless.gui.event;
 
 import org.useless.gui.template.container.Window;
 
+import static java.lang.System.exit;
+import static org.useless.gui.template.container.Window.CLOSES_ONLY;
+import static org.useless.gui.template.container.Window.CLOSE_AFTER_CLEANING;
+import static org.useless.gui.template.container.Window.DIRECT_CLOSURE;
+import static org.useless.gui.template.container.Window.NOT_CLOSED;
+
 public class RootEvent implements Root {
     private Window window;
-    private int closeOperation = Window.CLOSE_AFTER_CLEANING;
+    private int closeOperation = CLOSE_AFTER_CLEANING;
 
     public RootEvent() {
     }
@@ -26,7 +32,6 @@ public class RootEvent implements Root {
     @Override
     public void SizeEvent() {
         if (window != null) {
-            //window.updateDeliverData(); // 确保坐标系统更新
             window.refresh(); // 触发重绘
         }
     }
@@ -36,22 +41,22 @@ public class RootEvent implements Root {
         if (window == null) return;
 
         switch (closeOperation) {
-            case Window.DIRECT_CLOSURE -> {
+            case DIRECT_CLOSURE -> {
                 window.dispose();
                 window.getEventManager().cleanup();
-                System.exit(0);
+                exit(0);
             }
-            case Window.CLOSE_AFTER_CLEANING -> {
+            case CLOSE_AFTER_CLEANING -> {
                 // 这里可以添加资源清理逻辑
                 window.dispose();
                 window.getEventManager().cleanup();
-                System.exit(0);
+                exit(0);
             }
-            case Window.CLOSES_ONLY -> {
+            case CLOSES_ONLY -> {
                 window.dispose();
                 window.getEventManager().cleanup();
             }
-            case Window.NOT_CLOSED -> {
+            case NOT_CLOSED -> {
                 // 啥也不干，就是玩
             }
             default ->  {

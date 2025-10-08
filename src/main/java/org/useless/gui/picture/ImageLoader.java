@@ -1,12 +1,17 @@
 package org.useless.gui.picture;
 
-import org.lwjgl.stb.STBImage;
 import org.lwjgl.system.MemoryStack;
-import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import org.useless.gui.data.Size;
+import org.useless.gui.exception.ImageLoadException;
+
+import static java.lang.Math.max;
+import static org.lwjgl.stb.STBImage.stbi_failure_reason;
+import static org.lwjgl.stb.STBImage.stbi_load_from_memory;
+import static org.lwjgl.system.MemoryUtil.memAlloc;
+import static org.lwjgl.system.MemoryUtil.memFree;
 
 public class ImageLoader {
 
@@ -115,16 +120,16 @@ public class ImageLoader {
                 IntBuffer comp = stack.mallocInt(1);
 
                 // 将byte[]转换为ByteBuffer
-                ByteBuffer buffer = MemoryUtil.memAlloc(sourceData.length);
+                ByteBuffer buffer = memAlloc(sourceData.length);
                 buffer.put(sourceData);
                 buffer.flip();
 
                 // 修复：使用正确的STBImage方法
-                imageData = STBImage.stbi_load_from_memory(buffer, width, height, comp, 4);
-                MemoryUtil.memFree(buffer);
+                imageData = stbi_load_from_memory(buffer, width, height, comp, 4);
+                memFree(buffer);
 
                 if (imageData == null) {
-                    throw new ImageLoadException("STB_image从内存加载失败: " + path + " - " + STBImage.stbi_failure_reason());
+                    throw new ImageLoadException("STB_image从内存加载失败: " + path + " - " + stbi_failure_reason());
                 }
 
                 this.size = new Size(width.get(0), height.get(0));
@@ -163,18 +168,18 @@ public class ImageLoader {
                 IntBuffer comp = stack.mallocInt(1);
 
                 // 创建缓冲区的副本，避免修改原始数据
-                ByteBuffer bufferCopy = MemoryUtil.memAlloc(sourceBuffer.remaining());
+                ByteBuffer bufferCopy = memAlloc(sourceBuffer.remaining());
                 int originalPosition = sourceBuffer.position();
                 bufferCopy.put(sourceBuffer);
                 bufferCopy.flip();
                 sourceBuffer.position(originalPosition); // 恢复原始位置
 
                 // 修复：使用正确的STBImage方法
-                imageData = STBImage.stbi_load_from_memory(bufferCopy, width, height, comp, 4);
-                MemoryUtil.memFree(bufferCopy);
+                imageData = stbi_load_from_memory(bufferCopy, width, height, comp, 4);
+                memFree(bufferCopy);
 
                 if (imageData == null) {
-                    throw new ImageLoadException("STB_image从缓冲区加载失败: " + path + " - " + STBImage.stbi_failure_reason());
+                    throw new ImageLoadException("STB_image从缓冲区加载失败: " + path + " - " + stbi_failure_reason());
                 }
 
                 this.size = new Size(width.get(0), height.get(0));
@@ -207,7 +212,7 @@ public class ImageLoader {
 
             // 创建空的RGBA缓冲区（全透明）
             int bufferSize = size.width * size.height * 4;
-            imageData = MemoryUtil.memAlloc(bufferSize);
+            imageData = memAlloc(bufferSize);
 
             // 填充为全透明
             for (int i = 0; i < bufferSize; i++) {
@@ -224,7 +229,7 @@ public class ImageLoader {
             if (disposed) return;
 
             if (imageData != null) {
-                MemoryUtil.memFree(imageData);
+                memFree(imageData);
                 imageData = null;
             }
 
@@ -263,7 +268,7 @@ public class ImageLoader {
 
                 // 创建纯色图片数据
                 int bufferSize = size.width * size.height * 4;
-                imageData = MemoryUtil.memAlloc(bufferSize);
+                imageData = memAlloc(bufferSize);
 
                 for (int i = 0; i < size.width * size.height; i++) {
                     imageData.put(r).put(g).put(b).put(a);
@@ -283,7 +288,7 @@ public class ImageLoader {
             if (disposed) return;
 
             if (imageData != null) {
-                MemoryUtil.memFree(imageData);
+                memFree(imageData);
                 imageData = null;
             }
 
@@ -304,7 +309,7 @@ public class ImageLoader {
             this.size = new Size(width, height);
             this.color1 = color1;
             this.color2 = color2;
-            this.tileSize = Math.max(1, tileSize);
+            this.tileSize = max(1, tileSize);
         }
 
         @Override
@@ -324,7 +329,7 @@ public class ImageLoader {
 
                 // 创建棋盘格数据
                 int bufferSize = size.width * size.height * 4;
-                imageData = MemoryUtil.memAlloc(bufferSize);
+                imageData = memAlloc(bufferSize);
 
                 for (int y = 0; y < size.height; y++) {
                     for (int x = 0; x < size.width; x++) {
@@ -357,7 +362,7 @@ public class ImageLoader {
             if (disposed) return;
 
             if (imageData != null) {
-                MemoryUtil.memFree(imageData);
+                memFree(imageData);
                 imageData = null;
             }
 

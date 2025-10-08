@@ -1,4 +1,4 @@
-package org.useless.gui.uir;
+package org.useless.gui.exception;
 
 import static java.lang.System.err;
 import static java.lang.System.exit;

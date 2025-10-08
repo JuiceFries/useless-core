@@ -1,5 +1,6 @@
 package org.useless.gui.template;
 
+import org.useless.gui.arrange.Arrange;
 import org.useless.gui.drawing.Drawing;
 
 import java.util.List;
@@ -75,6 +76,12 @@ public non-sealed interface Container extends Template {
      * @param templates 模板数组
      */
     void remove(Template... templates);
+
+    /**
+     * 设置排布
+     * @param arrange
+     */
+    void setArrange(Arrange arrange);
 
     /**
      * 获取容器的可见性

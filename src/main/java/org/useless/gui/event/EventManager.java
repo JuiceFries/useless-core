@@ -1,23 +1,53 @@
 package org.useless.gui.event;
 
 import java.util.HashSet;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CopyOnWriteArraySet;
 import org.lwjgl.glfw.GLFW;
-import org.useless.gui.template.Container;
 import org.useless.gui.template.Template;
-import org.useless.gui.data.Ternary;
-import org.useless.gui.data.TernaryList;
 import org.useless.gui.template.agreement.RootAgreement;
 
-import java.util.concurrent.ConcurrentLinkedQueue;
+import static java.lang.String.format;
+import static org.lwjgl.glfw.GLFW.GLFW_MOUSE_BUTTON_LEFT;
+import static org.lwjgl.glfw.GLFW.GLFW_MOUSE_BUTTON_MIDDLE;
+import static org.lwjgl.glfw.GLFW.GLFW_MOUSE_BUTTON_RIGHT;
+import static org.lwjgl.glfw.GLFW.glfwGetCursorPos;
+import static org.lwjgl.glfw.GLFW.glfwSetCharCallback;
+import static org.lwjgl.glfw.GLFW.glfwSetCursorPosCallback;
+import static org.lwjgl.glfw.GLFW.glfwSetKeyCallback;
+import static org.lwjgl.glfw.GLFW.glfwSetMouseButtonCallback;
+import static org.lwjgl.glfw.GLFW.glfwSetScrollCallback;
+import static org.lwjgl.glfw.GLFW.glfwSetWindowCloseCallback;
+import static org.lwjgl.glfw.GLFW.glfwSetWindowShouldClose;
+import static org.lwjgl.glfw.GLFW.glfwSetWindowSizeCallback;
+import static org.useless.gui.event.Mouse.LEFT_CLICK;
+import static org.useless.gui.event.Mouse.MIDDLE_CLICK;
+import static org.useless.gui.event.Mouse.RIGHT_CLICK;
 
 /**
- * 主动收集型事件管理器 - 正确区分根容器和普通容器
+ * 高性能事件管理器 - 保持收集模式但优化处理逻辑
  */
 public class EventManager {
     private static EventManager instance;
-    private boolean out = false;
+
+    private final Set<Template> monitoredTemplates = new CopyOnWriteArraySet<>();
+    private final Map<Class<?>, Set<Object>> eventHandlers = new ConcurrentHashMap<>();
+
+    private final Queue<Runnable> keyboardQueue = new ConcurrentLinkedQueue<>();
+    private final Queue<Runnable> urgentQueue = new ConcurrentLinkedQueue<>();
+    private final Queue<Runnable> normalQueue = new ConcurrentLinkedQueue<>();
+
+    private long handle;
+    private boolean initialized = false;
+
+    // 性能统计
+    private int framesProcessed = 0;
+    private long totalEventsProcessed = 0;
 
     public static EventManager getInstance() {
         if (instance == null) {
@@ -26,41 +56,23 @@ public class EventManager {
         return instance;
     }
 
-    // 监听的模板列表
-    private final Set<Template> monitoredTemplates = new HashSet<>(); // 改用Set避免重复
-
-    // 三级事件存储
-    private final Ternary<Input, EventType, EventRate> inputEvents = new TernaryList<>();
-    private final Ternary<Mouse, EventType, EventRate> mouseEvents = new TernaryList<>();
-    private final Ternary<Root, EventType, EventRate> rootEvents = new TernaryList<>();
-
-    // 事件队列
-    private final Queue<Runnable> eventQueue = new ConcurrentLinkedQueue<>();
-
-    private long handle;
-    private boolean initialized = false;
-
     private EventManager() {
-        // 空构造器，通过monitorTemplate主动添加
-    }
-
-    public void setOut(boolean out) {
-        this.out = out;
+        // 初始化事件处理器分类
+        eventHandlers.put(Input.class, new HashSet<>());
+        eventHandlers.put(Mouse.class, new HashSet<>());
+        eventHandlers.put(Root.class, new HashSet<>());
     }
 
     /**
-     * 监控模板并收集其事件
+     * 监控模板并收集事件
      */
     public void monitorTemplate(Template template) {
         if (template == null || monitoredTemplates.contains(template)) {
             return;
         }
 
-        if (out) System.out.println(this);
-
         monitoredTemplates.add(template);
-        collectEventsFromTemplate(template);
-        if (out) System.out.println("监控模板: " + template.getClass().getSimpleName());
+        collectTemplateEvents(template);
 
         if (!initialized) {
             initializeHandle(template);
@@ -68,17 +80,55 @@ public class EventManager {
     }
 
     /**
-     * 停止监控模板
+     * 高性能事件收集 - 去重、过滤、分类
      */
-    public void stopMonitoredTemplates(Template template) {
-        if (monitoredTemplates.remove(template)) {
-            removeTemplateEvents(template);
-            if (out) System.out.println("停止监控模板: " + template.getClass().getSimpleName());
+    private void collectTemplateEvents(Template template) {
+        // 收集输入事件
+        template.getInputList().stream()
+                .filter(Objects::nonNull)
+                .forEach(input -> eventHandlers.get(Input.class).add(input));
+
+        // 收集鼠标事件
+        template.getMouseList().stream()
+                .filter(Objects::nonNull)
+                .forEach(mouse -> eventHandlers.get(Mouse.class).add(mouse));
+
+        // 收集根事件
+        if (template instanceof RootAgreement) {
+            Root root = ((RootAgreement) template).getRoot();
+            if (root != null) {
+                eventHandlers.get(Root.class).add(root);
+            }
         }
     }
 
     /**
-     * 初始化GLFW句柄
+     * 停止监控模板
+     */
+    public void stopMonitoring(Template template) {
+        if (monitoredTemplates.remove(template)) {
+            removeTemplateEvents(template);
+        }
+    }
+
+    /**
+     * 移除模板事件
+     */
+    private void removeTemplateEvents(Template template) {
+        // 从所有集合中移除该模板的事件
+        template.getInputList().forEach(input -> eventHandlers.get(Input.class).remove(input));
+        template.getMouseList().forEach(mouse -> eventHandlers.get(Mouse.class).remove(mouse));
+
+        if (template instanceof RootAgreement) {
+            Root root = ((RootAgreement) template).getRoot();
+            if (root != null) {
+                eventHandlers.get(Root.class).remove(root);
+            }
+        }
+    }
+
+    /**
+     * 初始化GLFW句柄和回调
      */
     private void initializeHandle(Template template) {
         if (template.getDraw().getHandle().glHandle() != 0) {
@@ -89,271 +139,208 @@ public class EventManager {
     }
 
     /**
-     * 设置GLFW回调
+     * 设置GLFW回调 - 优化事件分发
      */
     private void setupGlfwCallbacks() {
         if (handle == 0) return;
 
-        // 字符输入回调
-        GLFW.glfwSetCharCallback(handle, (window, codepoint) -> eventQueue.offer(() -> {
-            for (int i = 0; i < inputEvents.size(); i++) {
-                inputEvents.getFirst(i).inputKey((char) codepoint);
-            }
-        }));
+        // 字符输入 - 最高优先级，实时处理
+        glfwSetCharCallback(handle, (window, codepoint) -> handleCharInput((char) codepoint));
 
-        // 键盘按键回调
-        GLFW.glfwSetKeyCallback(handle, (window, key, scancode, action, mods) -> eventQueue.offer(() -> {
-            for (int i = 0; i < inputEvents.size(); i++) {
-                Input input = inputEvents.getFirst(i);
-                switch (action) {
-                    case GLFW.GLFW_PRESS -> input.pressKey(key);
-                    case GLFW.GLFW_RELEASE -> input.loosenKey(key);
-                    case GLFW.GLFW_REPEAT -> input.longPress(key);
-                }
+        // 键盘按键 - 高优先级
+        glfwSetKeyCallback(handle, (window, key, scancode, action, mods) -> {
+            switch (action) {
+                case GLFW.GLFW_PRESS -> keyboardQueue.offer(() -> handleKeyPress(key));
+                case GLFW.GLFW_RELEASE -> keyboardQueue.offer(() -> handleKeyRelease(key));
+                case GLFW.GLFW_REPEAT -> keyboardQueue.offer(() -> handleKeyRepeat(key));
             }
-        }));
+        });
 
-        // 鼠标点击回调
-        GLFW.glfwSetMouseButtonCallback(handle, (window, button, action, mods) -> {
+        // 鼠标点击 - 中优先级
+        glfwSetMouseButtonCallback(handle, (window, button, action, mods) -> {
             double[] x = new double[1], y = new double[1];
-            GLFW.glfwGetCursorPos(window, x, y);
-            eventQueue.offer(() -> {
-                for (int i = 0; i < mouseEvents.size(); i++) {
-                    if (action == GLFW.GLFW_PRESS) {
-                        Mouse mouse = mouseEvents.getFirst(i);
-                        int convertedButton = convertMouseButton(button);
-                        // 调用两个重载方法
-                        //noinspection MagicConstant
-                        mouse.clickEvent(convertedButton);                    // 无坐标版本
-                        //noinspection MagicConstant
-                        mouse.clickEvent(convertedButton, (int)x[0], (int)y[0]); // 有坐标版本
-                    }
-                }
-            });
+            glfwGetCursorPos(window, x, y);
+
+            if (action == GLFW.GLFW_PRESS) {
+                urgentQueue.offer(() -> handleMouseClick(button, (int) x[0], (int) y[0], false));
+            } else if (action == GLFW.GLFW_RELEASE) {
+                urgentQueue.offer(() -> handleMouseClick(button, (int) x[0], (int) y[0], true));
+            }
         });
 
-        // 鼠标滚动回调
-        GLFW.glfwSetScrollCallback(handle, (window, xOffset, yOffset) -> {
-            eventQueue.offer(() -> {
-                for (int i = 0; i < mouseEvents.size(); i++) {
-                    Mouse mouse = mouseEvents.getFirst(i);
-                    mouse.scrollEvent((int)(yOffset * 10)); // 乘个系数让滚动更明显
-                }
-            });
-        });
+        // 鼠标滚动 - 中优先级
+        glfwSetScrollCallback(handle, (window, xOffset, yOffset) -> urgentQueue.offer(() -> handleMouseScroll((int)(yOffset * 10))));
 
-        GLFW.glfwSetWindowPosCallback(handle, (window, x, y) -> eventQueue.offer(() -> {
-            for (int i = 0; i < rootEvents.size(); i++) {
-                rootEvents.getFirst(i).DragEvent();
-            }
-        }));
+        // 鼠标移动 - 低优先级
+        glfwSetCursorPosCallback(handle, (window, x, y) -> normalQueue.offer(() -> handleMouseMove((int)x, (int)y)));
 
-        // 鼠标移动回调
-        GLFW.glfwSetCursorPosCallback(handle, (window, x, y) -> eventQueue.offer(() -> {
-            for (int i = 0; i < mouseEvents.size(); i++) {
-                Mouse mouse = mouseEvents.getFirst(i);
-                mouse.mouseCoordinates(new org.useless.gui.data.Location((int)x, (int)y));
-            }
-        }));
+        // 窗口事件 - 中优先级
+        glfwSetWindowSizeCallback(handle, (window, w, h) -> urgentQueue.offer(this::handleWindowResize));
 
-        // 窗口事件回调 - 只触发根事件
-        GLFW.glfwSetWindowSizeCallback(handle, (window, w, h) -> eventQueue.offer(() -> {
-            for (int i = 0; i < rootEvents.size(); i++) {
-                rootEvents.getFirst(i).SizeEvent();
-            }
-        }));
-
-        GLFW.glfwSetWindowCloseCallback(handle, (window) -> {
-            GLFW.glfwSetWindowShouldClose(window, false); // 阻止默认关闭
-            eventQueue.offer(() -> {
-                for (int i = 0; i < rootEvents.size(); i++) {
-                    rootEvents.getFirst(i).CloseEvent();
-                }
-            });
+        glfwSetWindowCloseCallback(handle, (window) -> {
+            glfwSetWindowShouldClose(window, false);
+            urgentQueue.offer(this::handleWindowClose);
         });
     }
 
     /**
-     * 核心：从模板收集事件处理器（正确区分容器类型）
+     * 事件处理器方法 - 避免在回调中直接循环
      */
-    private void collectEventsFromTemplate(Template template) {
-        // 收集输入事件
-        for (Input input : template.getInputList()) {
-            if (!containsInput(input)) {
-                EventType type = determineEventType(template);
-                inputEvents.add(input, type, EventRate.LOW_FREQUENCY);
-            }
+    private void handleCharInput(char codepoint) {
+        // 实时处理，不进队列
+        Set<Object> inputs = eventHandlers.get(Input.class);
+        for (Object handler : inputs) {
+            ((Input) handler).inputKey(codepoint);
         }
+    }
 
-        // 收集鼠标事件
-        for (Mouse mouse : template.getMouseList()) {
-            if (!containsMouse(mouse)) {
-                EventType type = determineEventType(template);
-                mouseEvents.add(mouse, type, EventRate.LOW_FREQUENCY);
-            }
+    private void handleKeyPress(int key) {
+        Set<Object> inputs = eventHandlers.get(Input.class);
+        for (Object handler : inputs) {
+            ((Input) handler).pressKey(key);
         }
+    }
 
-        // 收集根事件 - 只有根容器才有
-        if (isRootContainer(template)) {
-            Root root = ((RootAgreement) template).getRoot();
-            if (root != null && !containsRoot(root)) {
-                rootEvents.add(root, EventType.ROOT, EventRate.LOW_FREQUENCY);
-            }
+    private void handleKeyRelease(int key) {
+        Set<Object> inputs = eventHandlers.get(Input.class);
+        for (Object handler : inputs) {
+            ((Input) handler).loosenKey(key);
+        }
+    }
+
+    private void handleKeyRepeat(int key) {
+        Set<Object> inputs = eventHandlers.get(Input.class);
+        for (Object handler : inputs) {
+            ((Input) handler).longPress(key);
+        }
+    }
+
+    private void handleMouseClick(int button, int x, int y,boolean release) {
+        Set<Object> mice = eventHandlers.get(Mouse.class);
+        int convertedButton = convertMouseButton(button);
+        for (Object handler : mice) {
+            Mouse mouse = (Mouse) handler;
+            mouse.clickEvent(convertedButton);
+            mouse.clickEvent(convertedButton, x, y);
+            mouse.isRelease(release);
+        }
+    }
+
+    private void handleMouseScroll(int delta) {
+        Set<Object> mice = eventHandlers.get(Mouse.class);
+        for (Object handler : mice) {
+            ((Mouse) handler).scrollEvent(delta);
+        }
+    }
+
+    private void handleMouseMove(int x, int y) {
+        Set<Object> mice = eventHandlers.get(Mouse.class);
+        for (Object handler : mice) {
+            ((Mouse) handler).mouseCoordinates(new org.useless.gui.data.Location(x, y));
+        }
+    }
+
+    private void handleWindowResize() {
+        Set<Object> roots = eventHandlers.get(Root.class);
+        for (Object handler : roots) {
+            ((Root) handler).SizeEvent();
+        }
+    }
+
+    private void handleWindowClose() {
+        Set<Object> roots = eventHandlers.get(Root.class);
+        for (Object handler : roots) {
+            ((Root) handler).CloseEvent();
         }
     }
 
     /**
-     * 判断是否为根容器（正确实现）
-     */
-    private boolean isRootContainer(Template template) {
-        return template instanceof Container &&
-                template instanceof RootAgreement &&
-                ((Container) template).isRootContainer();
-    }
-
-    /**
-     * 确定事件类型
-     */
-    private EventType determineEventType(Template template) {
-        if (template instanceof Container) {
-            return ((Container) template).isRootContainer() ? EventType.ROOT : EventType.NON_ROOT;
-        }
-        return EventType.GENERAL;
-    }
-
-    /**
-     * 移除模板相关的事件处理器
-     */
-    private void removeTemplateEvents(Template template) {
-        // 移除输入事件
-        for (Input input : template.getInputList()) {
-            removeInput(input);
-        }
-
-        // 移除鼠标事件
-        for (Mouse mouse : template.getMouseList()) {
-            removeMouse(mouse);
-        }
-
-        // 移除根事件
-        if (isRootContainer(template)) {
-            Root root = ((RootAgreement) template).getRoot();
-            if (root != null) {
-                removeRoot(root);
-            }
-        }
-    }
-
-    // 查重和移除辅助方法
-    private boolean containsInput(Input target) {
-        for (int i = 0; i < inputEvents.size(); i++) {
-            if (inputEvents.getFirst(i).equals(target)) return true;
-        }
-        return false;
-    }
-
-    private boolean containsMouse(Mouse target) {
-        for (int i = 0; i < mouseEvents.size(); i++) {
-            if (mouseEvents.getFirst(i).equals(target)) return true;
-        }
-        return false;
-    }
-
-    private boolean containsRoot(Root target) {
-        for (int i = 0; i < rootEvents.size(); i++) {
-            if (rootEvents.getFirst(i).equals(target)) return true;
-        }
-        return false;
-    }
-
-    private void removeInput(Input target) {
-        for (int i = 0; i < inputEvents.size(); i++) {
-            if (inputEvents.getFirst(i).equals(target)) {
-                inputEvents.remove(i);
-                break;
-            }
-        }
-    }
-
-    private void removeMouse(Mouse target) {
-        for (int i = 0; i < mouseEvents.size(); i++) {
-            if (mouseEvents.getFirst(i).equals(target)) {
-                mouseEvents.remove(i);
-                break;
-            }
-        }
-    }
-
-    private void removeRoot(Root target) {
-        for (int i = 0; i < rootEvents.size(); i++) {
-            if (rootEvents.getFirst(i).equals(target)) {
-                rootEvents.remove(i);
-                break;
-            }
-        }
-    }
-
-    /**
-     * 处理事件队列（每帧调用）
+     * 处理事件队列 - 优化后的版本
      */
     public void processEvents() {
+        framesProcessed++;
+
+        // 1. 处理所有键盘事件（无限制）
+        processAllInQueue(keyboardQueue);
+
+        // 2. 处理紧急事件（最多50个）
+        processQueue(urgentQueue, 50);
+
+        // 3. 处理普通事件（最多30个）
+        processQueue(normalQueue, 30);
+
+        // 每100帧清理一次空队列
+        if (framesProcessed % 100 == 0) {
+            cleanupEmptyQueues();
+        }
+    }
+
+    private void processAllInQueue(Queue<Runnable> queue) {
         int processed = 0;
-        while (!eventQueue.isEmpty() && processed < 100) { // 每帧最多处理100个
-            Runnable task = eventQueue.poll();
+        while (!queue.isEmpty()) {
+            Runnable task = queue.poll();
             if (task != null) {
-                try {
-                    task.run();
-                    processed++;
-                } catch (Exception e) {
-                    System.err.println("事件处理失败: " + e.getMessage());
-                }
+                task.run();
+                processed++;
+                totalEventsProcessed++;
             }
         }
     }
 
-    /**
-     * 转换鼠标按钮
-     */
-    private int convertMouseButton(int glfwButton) {
-        return switch (glfwButton) {
-            case GLFW.GLFW_MOUSE_BUTTON_LEFT -> Mouse.LEFT_CLICK;
-            case GLFW.GLFW_MOUSE_BUTTON_RIGHT -> Mouse.RIGHT_CLICK;
-            case GLFW.GLFW_MOUSE_BUTTON_MIDDLE -> Mouse.MIDDLE_CLICK;
-            default -> glfwButton;
-        };
+    private void processQueue(Queue<Runnable> queue, int maxCount) {
+        int processed = 0;
+        while (!queue.isEmpty() && processed < maxCount) {
+            Runnable task = queue.poll();
+            if (task != null) {
+                task.run();
+                processed++;
+                totalEventsProcessed++;
+            }
+        }
+    }
+
+    private void cleanupEmptyQueues() {
     }
 
     /**
-     * 刷新事件收集
+     * 性能统计
      */
-    public void refreshEvents() {
-        monitoredTemplates.forEach(this::collectEventsFromTemplate);
+    public String getPerformanceStats() {
+        double avgEventsPerFrame = framesProcessed > 0 ?
+                (double) totalEventsProcessed / framesProcessed : 0;
+
+        return format("事件统计 - 帧数:%d 总事件:%d 平均事件/帧:%.1f 队列:[K:%d U:%d N:%d]",
+                framesProcessed, totalEventsProcessed, avgEventsPerFrame,
+                keyboardQueue.size(), urgentQueue.size(), normalQueue.size());
     }
 
     /**
      * 获取监控状态
      */
     public String getMonitorStatus() {
-        return String.format("监控状态 - 模板:%d 输入事件:%d 鼠标事件:%d 根事件:%d 待处理队列:%d",
-                monitoredTemplates.size(), inputEvents.size(),
-                mouseEvents.size(), rootEvents.size(), eventQueue.size());
+        return format("监控状态 - 模板:%d 输入处理器:%d 鼠标处理器:%d 根处理器:%d",
+                monitoredTemplates.size(),
+                eventHandlers.get(Input.class).size(),
+                eventHandlers.get(Mouse.class).size(),
+                eventHandlers.get(Root.class).size());
     }
 
-    /**
-     * 清理资源
-     */
+    private int convertMouseButton(int glfwButton) {
+        return switch (glfwButton) {
+            case GLFW_MOUSE_BUTTON_LEFT -> LEFT_CLICK;
+            case GLFW_MOUSE_BUTTON_RIGHT -> RIGHT_CLICK;
+            case GLFW_MOUSE_BUTTON_MIDDLE -> MIDDLE_CLICK;
+            default -> glfwButton;
+        };
+    }
+
     public void cleanup() {
         monitoredTemplates.clear();
-        inputEvents.clear();
-        mouseEvents.clear();
-        rootEvents.clear();
-        eventQueue.clear();
+        eventHandlers.values().forEach(Set::clear);
+        keyboardQueue.clear();
+        urgentQueue.clear();
+        normalQueue.clear();
         initialized = false;
         handle = 0;
     }
-
-    public boolean isInitialized() {
-        return initialized;
-    }
-
 }

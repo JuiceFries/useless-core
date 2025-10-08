@@ -1,7 +1,6 @@
 package org.useless.gui.drawing;
 
 import java.nio.ByteBuffer;
-import java.nio.FloatBuffer;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.jetbrains.annotations.NotNull;
@@ -12,9 +11,8 @@ import org.useless.gui.template.Template;
 import org.useless.gui.event.EventManager;
 import org.useless.gui.font.Font;
 import org.useless.gui.font.FontRegistry;
-import org.useless.gui.font.Style;
 import org.useless.gui.picture.Picture;
-import org.useless.gui.uir.Handle;
+import org.useless.gui.data.Handle;
 
 import static java.lang.Math.max;
 import static java.lang.Math.toRadians;
@@ -24,7 +22,7 @@ import static org.lwjgl.nanovg.NVGColor.create;
 import static org.lwjgl.nanovg.NanoVG.nvgBeginPath;
 import static org.lwjgl.nanovg.NanoVG.nvgCircle;
 import static org.lwjgl.nanovg.NanoVG.nvgClosePath;
-import static org.lwjgl.nanovg.NanoVG.nvgCreateFont;
+import static org.lwjgl.nanovg.NanoVG.nvgCreateFontMem;
 import static org.lwjgl.nanovg.NanoVG.nvgCreateImageRGBA;
 import static org.lwjgl.nanovg.NanoVG.nvgDeleteImage;
 import static org.lwjgl.nanovg.NanoVG.nvgEllipse;
@@ -47,7 +45,6 @@ import static org.lwjgl.nanovg.NanoVG.nvgStroke;
 import static org.lwjgl.nanovg.NanoVG.nvgStrokeColor;
 import static org.lwjgl.nanovg.NanoVG.nvgStrokeWidth;
 import static org.lwjgl.nanovg.NanoVG.nvgText;
-import static org.lwjgl.nanovg.NanoVG.nvgTextBounds;
 import static org.lwjgl.nanovg.NanoVG.nvgTextLetterSpacing;
 import static org.lwjgl.nanovg.NanoVG.nvgTranslate;
 import static org.useless.gui.data.Color.WHITE;
@@ -292,7 +289,7 @@ class VGBrush implements Drawing{
         nvgFontFaceId(vgHandle, fontHandle);
         nvgFontSize(vgHandle, font.getSize());
 
-        nvgTextLetterSpacing(vgHandle, (charSpacing - 1.0f) * font.getSize() * 0.1f);
+        nvgTextLetterSpacing(vgHandle, charSpacing);
 
         NVGColor textColor = create();
         textColor.r(color.getR());
@@ -335,17 +332,20 @@ class VGBrush implements Drawing{
     }
 
     private int getOrCreateNVGFont(FontResource fontRes) {
-        return nvgFontHandles.computeIfAbsent(fontRes.getName(), alias -> {
-            // 直接使用FontRegistry提供的字体文件路径
-            if (fontRes.getFontFile() == null || !fontRes.getFontFile().exists()) {
-                err.println("字体文件不存在: " + alias);
-                return -1;
-            }
+        String cleanAlias = fontRes.getName().replaceAll("[^a-zA-Z0-9]", "_");
+        if(cleanAlias.matches("^[0-9_].*")) {
+            cleanAlias = "font" + cleanAlias;
+        }
 
-            int fontHandle = nvgCreateFont(vgHandle, fontRes.getName(), fontRes.getFontFile().getAbsolutePath());
-            if (fontHandle == -1) {
-                err.println("NanoVG字体创建失败: " + alias);
-                return -1;
+        return nvgFontHandles.computeIfAbsent(cleanAlias, alias -> {
+            // 直接用nvgCreateFontMem从内存加载
+            ByteBuffer fontBuffer = ByteBuffer.allocateDirect(fontRes.getFontData().length);
+            fontBuffer.put(fontRes.getFontData());
+            fontBuffer.flip();
+
+            int fontHandle = nvgCreateFontMem(vgHandle, alias, fontBuffer, false);
+            if(fontHandle <= 0) {
+                fontHandle = nvgCreateFontMem(vgHandle, "f" + System.nanoTime(), fontBuffer, false);
             }
             return fontHandle;
         });
@@ -451,6 +451,11 @@ class VGBrush implements Drawing{
 
     @Override
     public float measureText(String text, Font font) {
+        return measureText(text, font, this.charSpacing);
+    }
+
+    @Override
+    public float measureText(String text, Font font, float spacing) {
         if (vgHandle == 0 || text == null || text.isEmpty()) return 0;
 
         try {
@@ -462,18 +467,17 @@ class VGBrush implements Drawing{
 
             nvgFontFaceId(vgHandle, fontHandle);
             nvgFontSize(vgHandle, font.getSize());
+            nvgTextLetterSpacing(vgHandle, spacing);
 
-            nvgTextLetterSpacing(vgHandle, (charSpacing - 1.0f) * font.getSize() * 0.1f);
-
-            FloatBuffer bounds = FloatBuffer.allocate(4);
-            nvgTextBounds(vgHandle, 0, 0, text, bounds);
+            // 直接使用nvgText的advance返回值，这是最安全的方式
+            float advance = nvgText(vgHandle, 0, 0, text);
 
             nvgTextLetterSpacing(vgHandle, 0);
+            return Math.max(0, advance);
 
-            return max(0, bounds.get(2) - bounds.get(0));
         } catch (Exception e) {
-            err.println("测量文本宽度失败: " + e.getMessage());
-            return 0;
+            System.err.println("文本测量fallback: " + e.getMessage());
+            return text.length() * font.getSize() * 0.6f; // 更准确的估算
         }
     }
 

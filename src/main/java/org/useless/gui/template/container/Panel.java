@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import org.jetbrains.annotations.NotNull;
+import org.useless.gui.arrange.Arrange;
 import org.useless.gui.data.Color;
 import org.useless.gui.template.Container;
 import org.useless.gui.template.Template;
@@ -12,9 +13,10 @@ import org.useless.gui.data.Size;
 import org.useless.gui.drawing.Drawing;
 import org.useless.gui.event.Input;
 import org.useless.gui.event.Mouse;
-import org.useless.gui.uir.IllegalComponentException;
+import org.useless.gui.exception.IllegalComponentException;
 
 import static java.lang.System.err;
+import static org.useless.gui.uir.UIManager.applyTo;
 
 /**
  * 面板<br>
@@ -37,7 +39,17 @@ public class Panel implements Container {
     private final List<Input> inputList = new ArrayList<>();
     private final List<Mouse> mouseList = new ArrayList<>();
     private boolean init = true;
-    public Panel() {}
+    private Arrange arrange;
+
+    public Panel() {
+        this(null);
+    }
+    public Panel(Arrange arrange) {
+        this.arrange = arrange;
+        if (arrange != null && !templateList.isEmpty()) {
+            arrange.rearrange(this);
+        }
+    }
 
     // stm =====
 
@@ -84,25 +96,22 @@ public class Panel implements Container {
     @Override
     public void add(Template template) {
         if (template == null) throw new NullPointerException("所添加的容器不能为空!");
-        else {
-            if (template instanceof Container) {
-                if (((Container) template).isRootContainer()) {
-                    throw new IllegalComponentException("根容器不能被添加到任何容器上!");
-                } else if (template == this) {
-                    throw new IllegalComponentException("窗口不能添加自己!就像水杯不能把自己放进去一样！");
-                } else {
-                    templateList.add(template);
-                }
-            } else {
-                templateList.add(template);
-            }
-        }
+        else if (template instanceof Container) {
+            if (((Container) template).isRootContainer())
+                throw new IllegalComponentException("根容器不能被添加到任何容器上!");
+            else if (template == this)
+                throw new IllegalComponentException("窗口不能添加自己!就像水杯不能把自己放进去一样！");
+            else templateList.add(template);
+        } else templateList.add(template);
+        applyTo(template);
+        // 添加后自动应用布局
+        if (arrange != null) arrange.rearrange(this);
     }
 
     @Override
     public void add(Template @NotNull ... template) {
-        for (Template templates : template) {
-            this.add(templates);
+        for (Template t : template) {
+            this.add(t);
         }
     }
 
@@ -110,11 +119,17 @@ public class Panel implements Container {
     public void remove(Template template) {
         if (template == null) throw new NullPointerException("要移除的组件不存在!你是想要移除空气?");
         else if (template == this) throw new IllegalStateException("组件无法移除自身!就好比把箱子从箱子里拿出!");
-        else templateList.remove(template);
+        else {
+            templateList.remove(template);
+            // 移除后重新布局
+            if (arrange != null) {
+                arrange.rearrange(this);
+            }
+        }
     }
 
     @Override
-    public void remove(Template... templates) {
+    public void remove(Template @NotNull ... templates) {
         for (Template template : templates) {
             this.remove(template);
         }
@@ -142,6 +157,16 @@ public class Panel implements Container {
 
 
     // set =====
+
+
+    @Override
+    public void setArrange(Arrange arrange) {
+        this.arrange = arrange;
+        if (arrange != null && !templateList.isEmpty()) {
+            arrange.rearrange(this);
+        }
+    }
+
 
     @Override
     public void setLocation(Location location) {

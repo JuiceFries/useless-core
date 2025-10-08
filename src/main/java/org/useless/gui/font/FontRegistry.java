@@ -1,8 +1,8 @@
 package org.useless.gui.font;
 
-import java.io.File;
+import org.useless.io.ListLoader;
+
 import java.io.InputStream;
-import java.nio.file.Files;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -14,41 +14,36 @@ public class FontRegistry {
     private static boolean testOut = false;
 
     static {
-        // 注册默认字体
-        registerDefaultFont();
+        // 从listing.json注册字体
+        registerFontsFromListing();
     }
 
-    private static void registerDefaultFont() {
-        // 批量注册字体
-        String[][] fontEntries = {
-                {Font.DEFAULT, "/font/SourceHanSansSC-Regular.otf"},
-                {Font.SIM_SUN, "/font/LXGWWenKaiScreen.ttf"}
-        };
-
-        for (String[] entry : fontEntries) {
-            try {
-                FontResource fontRes = loadSingleFontResource(entry[1]);
-                fonts.put(entry[0], fontRes);
-                if (testOut) System.out.println("字体注册成功: " + entry[0]);
-            } catch (Exception e) {
-                System.err.println("字体加载失败: " + entry[0] + " - " + e.getMessage());
+    private static void registerFontsFromListing() {
+        try {
+            ListLoader.initializeLoading();
+            Map<String, String> fontMap = ListLoader.getAllFonts();
+            for (Map.Entry<String, String> entry : fontMap.entrySet()) {
+                try {
+                    FontResource fontRes = loadSingleFontResource(entry.getValue());
+                    fonts.put(entry.getKey(), fontRes);
+                    if (testOut) System.out.println("字体注册成功: " + entry.getKey());
+                } catch (Exception e) {
+                    System.err.println("字体加载失败: " + entry.getKey() + " - " + e.getMessage());
+                }
             }
+        } catch (Exception e) {
+            System.err.println("字体注册表初始化失败: " + e.getMessage());
         }
     }
 
-    // 新增单字体加载方法
+    // 直接从资源加载字体数据
     private static FontResource loadSingleFontResource(String resourcePath) throws Exception {
         InputStream is = FontRegistry.class.getResourceAsStream(resourcePath);
         if (is == null) throw new Exception("字体资源不存在: " + resourcePath);
 
         byte[] data = is.readAllBytes();
         is.close();
-
-        File tempFile = File.createTempFile("font_", ".ttf");
-        tempFile.deleteOnExit();
-        Files.write(tempFile.toPath(), data);
-
-        return new FontResource(resourcePath, data, tempFile);
+        return new FontResource(resourcePath, data);
     }
 
     public static void setTestOut(boolean testOut) {
@@ -91,27 +86,24 @@ public class FontRegistry {
         return fonts.getOrDefault(alias, fonts.get(Font.DEFAULT));
     }
 
-    // 字体资源类
+    // 字体资源类 - 只存内存数据
     public static class FontResource {
         private final String name;
         private final byte[] fontData;
-        private final File fontFile; // 临时文件
 
-        public FontResource(String name, byte[] fontData, File fontFile) {
+        public FontResource(String name, byte[] fontData) {
             this.name = name;
             this.fontData = fontData;
-            this.fontFile = fontFile;
         }
 
         public byte[] getFontData() { return fontData; }
-        public File getFontFile() { return fontFile; }
         public String getName() { return name; }
     }
 
     private static FontResource loadFontFromFile(String filePath) throws Exception {
-        File file = new File(filePath);
-        byte[] data = Files.readAllBytes(file.toPath());
-        return new FontResource(file.getName(), data, file);
+        java.io.File file = new java.io.File(filePath);
+        byte[] data = java.nio.file.Files.readAllBytes(file.toPath());
+        return new FontResource(file.getName(), data);
     }
 
     private static FontResource loadFontFromResource(String resourcePath) throws Exception {
@@ -120,12 +112,6 @@ public class FontRegistry {
 
         byte[] data = is.readAllBytes();
         is.close();
-
-        // 创建临时文件供渲染后端使用
-        File tempFile = File.createTempFile("font_", ".ttf");
-        tempFile.deleteOnExit();
-        Files.write(tempFile.toPath(), data);
-
-        return new FontResource(resourcePath, data, tempFile);
+        return new FontResource(resourcePath, data);
     }
 }

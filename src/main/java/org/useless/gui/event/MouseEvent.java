@@ -24,5 +24,10 @@ public class MouseEvent implements Mouse {
 
     }
 
+    @Override
+    public void isRelease(boolean release) {
+
+    }
+
 
 }

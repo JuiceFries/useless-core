@@ -1,4 +1,3 @@
 package org.useless.gui.event;
 
-public interface Event {
-}
+public interface Event {}

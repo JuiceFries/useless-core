@@ -1,1 +1,0 @@
-package org.useless.gui.uir; /** 句柄传递<br> 没错它只有一行! 我劝你不要乱碰他！因为这东西很棘手！*/ public record Handle( long glHandle , long vgHandle ) { }

@@ -1,6 +1,6 @@
 package org.useless.gui.event;
 
-import org.useless.gui.uir.annotation.FullName;
+import org.useless.annotation.FullName;
 
 /**
  * 事件队列类型<br>
@@ -23,6 +23,7 @@ import org.useless.gui.uir.annotation.FullName;
  * @since 0.0.3
  * @version 1.0
  */
+@Deprecated(since = "0.0.3-Stable")
 @FullName(fullName = "EventQueueType")
 public enum EventType {
     /// 根容器事件

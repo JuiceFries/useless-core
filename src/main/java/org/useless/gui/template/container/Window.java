@@ -11,6 +11,7 @@ import org.lwjgl.glfw.GLFWVidMode;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
+import org.useless.gui.arrange.Arrange;
 import org.useless.gui.data.Color;
 import org.useless.gui.data.Location;
 import org.useless.gui.data.Size;
@@ -25,9 +26,9 @@ import org.useless.gui.template.Template;
 import org.useless.gui.template.agreement.RootAgreement;
 import org.useless.gui.template.Container;
 import org.useless.gui.uir.DrawLayer;
-import org.useless.gui.uir.annotation.Fixed;
-import org.useless.gui.uir.Handle;
-import org.useless.gui.uir.IllegalComponentException;
+import org.useless.annotation.Fixed;
+import org.useless.gui.data.Handle;
+import org.useless.gui.exception.IllegalComponentException;
 import org.useless.gui.uir.Layer;
 import org.useless.gui.uir.LayerManager;
 
@@ -36,6 +37,7 @@ import java.nio.IntBuffer;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
+import org.useless.annotation.FullName;
 
 import static java.lang.Math.max;
 import static java.lang.System.currentTimeMillis;
@@ -108,7 +110,11 @@ import static org.lwjgl.system.MemoryUtil.memAlloc;
 import static org.useless.gui.drawing.DrawImpl.NanoVG;
 import static org.useless.gui.drawing.Drawing.init;
 import static org.useless.gui.event.EventManager.getInstance;
+import static org.useless.gui.uir.InitPhase.triggerAfterInitialization;
+import static org.useless.gui.uir.InitPhase.triggerBeforeInitialization;
+import static org.useless.gui.uir.UIManager.applyTo;
 import static org.useless.gui.uir.UIManager.default32xIcon;
+import static org.useless.gui.uir.InitPhase.executeFrameTask;
 
 /**
  * <h2>窗口</h2>
@@ -166,7 +172,8 @@ public class Window implements Container, RootAgreement {
     /**
      * ui线程
      */
-    private final ExecutorService UIThread = newSingleThreadExecutor();
+    @FullName(fullName = "Useless Thread Scheduling")
+    private final ExecutorService UTS = newSingleThreadExecutor();
 
     /// 事件管理器
     private EventManager eventManager;
@@ -230,6 +237,8 @@ public class Window implements Container, RootAgreement {
     private final List<Mouse> mouseList = new ArrayList<>();
     private Picture icon = default32xIcon;
 
+    private Arrange arrange;
+
 
     /**
      * 无参构造方法
@@ -245,7 +254,7 @@ public class Window implements Container, RootAgreement {
      */
     public Window(String title) {
         this.title = title;
-        UIThread.submit(this::initWindow);
+        UTS.submit(this::initWindow);
     }
 
     // set ====================
@@ -316,7 +325,7 @@ public class Window implements Container, RootAgreement {
      * @throws RuntimeException 窗口不能小于1!
      */
     @Override
-    public void setSize(Size size) {
+    public void setSize(@NotNull Size size) {
         if (size.width < 1 || size.height < 1) throw new RuntimeException("窗口不能小于1!");
         if (glHandle != 0) {
             glfwSetWindowSize(glHandle,size.width,size.height);
@@ -360,6 +369,23 @@ public class Window implements Container, RootAgreement {
         if (glHandle != 0) {
             if (visible) glfwShowWindow(glHandle);
             else glfwHideWindow(glHandle);
+        }
+    }
+
+    @Deprecated
+    @Override
+    public void setArrange(Arrange arrange) {
+        this.arrange = arrange;
+        if (arrange != null) {
+            // 直接操作图层管理器里的真实对象
+            List<Template> templates = layerManager.getSortedLayers().stream()
+                    .filter(layer -> layer instanceof Template)
+                    .map(layer -> (Template) layer)
+                    .toList();
+
+            if (!templates.isEmpty()) {
+                arrange.rearrange(this);
+            }
         }
     }
 
@@ -482,14 +508,12 @@ public class Window implements Container, RootAgreement {
                 ByteBuffer imageData = icon.getImageData();
 
                 if (imageData != null) {
-                    // 关键：确保数据是RGBA格式且正确对齐
+                    // 确保数据是RGBA格式且正确对齐
                     ByteBuffer rgbaData = convertToRGBA(icon, imageData);
                     if (rgbaData != null) {
                         // 设置GLFW图像数据
                         GLFWImage glfwImage = images.get(i);
                         glfwImage.set(icon.getImageWidth(), icon.getImageHeight(), rgbaData);
-
-                        // 重要：这里不要释放rgbaData，GLFW会自己管理
                     }
                 }
             }
@@ -779,6 +803,7 @@ public class Window implements Container, RootAgreement {
                 layerManager.addLayer(template);
             }
         }
+        applyTo(template);
     }
 
     @Override
@@ -874,7 +899,7 @@ public class Window implements Container, RootAgreement {
             glfwDestroyWindow(glHandle);
             glHandle = 0;
         }
-        UIThread.shutdown(); // 加上这行，不然线程池变僵尸
+        UTS.shutdown(); // 加上这行，不然线程池变僵尸
     }
 
 
@@ -1065,6 +1090,8 @@ public class Window implements Container, RootAgreement {
             }
             backgroundImpl();
 
+            executeFrameTask();
+
             // NanoVG帧开始
             nvgBeginFrame(vgHandle, size.width, size.height, 1f);
 
@@ -1100,6 +1127,7 @@ public class Window implements Container, RootAgreement {
         glfwMakeContextCurrent(glHandle);
         createCapabilities();
 
+        // 在 Window 类的 initSet 方法中添加
         glEnable(GL11.GL_BLEND);
         glBlendFunc(GL11.GL_ONE, GL11.GL_ONE_MINUS_SRC_ALPHA);
 
@@ -1131,6 +1159,8 @@ public class Window implements Container, RootAgreement {
         if (transparent) glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, GLFW_TRUE);
         // titleVisibility为true时显示标题栏，false时隐藏
         glfwWindowHint(GLFW_DECORATED, titleVisibility ? GLFW_TRUE : GLFW_FALSE);
+        triggerBeforeInitialization();
+
     }
 
     /**
@@ -1143,21 +1173,21 @@ public class Window implements Container, RootAgreement {
         if (icon != null) {
             applyIconsToWindow(singletonList(icon));
         }
+        applyTo(this);
+        triggerAfterInitialization(selectHandle());
     }
 
     /// 坐标转换设置
     protected void coordinateSetting() {
-        // 1. 设置投影矩阵（像素坐标，Y轴倒立）
         glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
         glOrtho(0, size.width, size.height, 0, -1, 1); // 注意Y参数倒置！
         glMatrixMode(GL_MODELVIEW);
 
-        // 2. 动态视口更新（加到size回调里）
         glfwSetWindowSizeCallback(glHandle, (window, w, h) -> {
             this.size = new Size(w, h);
-            glViewport(0, 0, w, h); // 关键！同步OpenGL视口
-            updateProjectionMatrix(w, h); // 更新投影矩阵
+            glViewport(0, 0, w, h);
+            updateProjectionMatrix(w, h);
         });
     }
 

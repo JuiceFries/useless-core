@@ -1,7 +1,7 @@
 package org.useless.gui.drawing;
 
 import org.jetbrains.annotations.NotNull;
-import org.useless.gui.uir.IllegalComponentException;
+import org.useless.gui.exception.IllegalComponentException;
 
 /**
  * 绘图实现<br>

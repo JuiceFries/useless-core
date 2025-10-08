@@ -10,7 +10,7 @@ public class TintStyle implements Style {
 
     @Override
     public void apply(Template target) {
-        target.setBackground(Color.WHITE);
+        target.setBackground(new Color(248, 248, 248));
     }
 
     @Override

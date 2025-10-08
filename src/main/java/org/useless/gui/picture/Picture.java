@@ -3,6 +3,7 @@ package org.useless.gui.picture;
 import java.nio.ByteBuffer;
 import org.useless.gui.data.Location;
 import org.useless.gui.data.Size;
+import org.useless.gui.exception.ImageLoadException;
 
 public interface Picture {
     // 基础属性

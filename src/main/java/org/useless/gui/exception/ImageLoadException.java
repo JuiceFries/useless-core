@@ -1,4 +1,4 @@
-package org.useless.gui.picture;
+package org.useless.gui.exception;
 
 public class ImageLoadException extends Exception {
     public ImageLoadException() {

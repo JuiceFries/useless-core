@@ -1,13 +1,11 @@
-package org.useless.gui.uir.annotation;
+package org.useless.annotation;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import static java.lang.annotation.ElementType.CONSTRUCTOR;
-import static java.lang.annotation.ElementType.FIELD;
-import static java.lang.annotation.ElementType.LOCAL_VARIABLE;
+import static java.lang.annotation.ElementType.*;
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.ElementType.MODULE;
 import static java.lang.annotation.ElementType.PACKAGE;
@@ -15,16 +13,23 @@ import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.ElementType.TYPE;
 
 /**
- * 用以表示对用方法或类是否固定
+ * <h6>完全名</h6>
+ * 用以展示方法或变量的完全名称
+ * @apiNote 用以显示方法简略后的完整名称
+ * @version 1.0
+ * @since 0.0.3
  */
+
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 @Target(value={CONSTRUCTOR, FIELD, LOCAL_VARIABLE, METHOD, PACKAGE, MODULE, PARAMETER, TYPE})
-public @interface Fixed {
+public @interface FullName {
 
     /**
-     * 用于表示该API或方法只需固定多久
+     * 完全名<br>
+     * 用于展示缩写方法或变量的玩整名称
+     * @return 方法完整名称
      */
-    String continuous() default "~1-Beta";
+    String fullName();
 
 }

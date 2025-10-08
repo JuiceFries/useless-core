@@ -18,8 +18,8 @@ import org.useless.gui.font.Font;
 import org.useless.gui.font.FontRegistry;
 import org.useless.gui.font.Style;
 import org.useless.gui.picture.Picture;
-import org.useless.gui.uir.annotation.FullName;
-import org.useless.gui.uir.Handle;
+import org.useless.annotation.FullName;
+import org.useless.gui.data.Handle;
 
 /**
  * 妈的我的代码太烂了这个模块禁用了！

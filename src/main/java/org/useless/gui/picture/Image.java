@@ -1,12 +1,19 @@
 package org.useless.gui.picture;
 
-import org.lwjgl.stb.STBImage;
 import org.lwjgl.system.MemoryStack;
 import org.useless.gui.data.Location;
 import org.useless.gui.data.Size;
 
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
+import org.useless.gui.exception.ImageLoadException;
+
+import static java.lang.String.format;
+import static java.lang.System.err;
+import static java.lang.System.out;
+import static org.lwjgl.stb.STBImage.stbi_failure_reason;
+import static org.lwjgl.stb.STBImage.stbi_image_free;
+import static org.lwjgl.stb.STBImage.stbi_load;
 
 public class Image implements Picture {
     protected String path;
@@ -65,10 +72,10 @@ public class Image implements Picture {
     @Override
     public void render(int x, int y) {
         if (!isLoaded()) {
-            System.err.println("图片未加载: " + path);
+            err.println("图片未加载: " + path);
             return;
         }
-        System.out.println("渲染图片到: " + x + ", " + y + " [尺寸: " + getSize() + "]");
+        out.println("渲染图片到: " + x + ", " + y + " [尺寸: " + getSize() + "]");
     }
 
     @Override
@@ -79,10 +86,10 @@ public class Image implements Picture {
     @Override
     public void render(int x, int y, int width, int height) {
         if (!isLoaded()) {
-            System.err.println("图片未加载: " + path);
+            err.println("图片未加载: " + path);
             return;
         }
-        System.out.println("渲染图片到: " + x + ", " + y + " [缩放尺寸: " + width + "x" + height + "]");
+        out.println("渲染图片到: " + x + ", " + y + " [缩放尺寸: " + width + "x" + height + "]");
     }
 
     @Override
@@ -100,9 +107,9 @@ public class Image implements Picture {
             IntBuffer height = stack.mallocInt(1);
             IntBuffer comp = stack.mallocInt(1);
 
-            imageData = STBImage.stbi_load(path, width, height, comp, 4);
+            imageData = stbi_load(path, width, height, comp, 4);
             if (imageData == null) {
-                throw new ImageLoadException("STB_image加载失败: " + path + " - " + STBImage.stbi_failure_reason());
+                throw new ImageLoadException("STB_image加载失败: " + path + " - " + stbi_failure_reason());
             }
 
             this.size = new Size(width.get(0), height.get(0));
@@ -120,7 +127,7 @@ public class Image implements Picture {
         if (disposed) return;
 
         if (imageData != null) {
-            STBImage.stbi_image_free(imageData);
+            stbi_image_free(imageData);
             imageData = null;
         }
 
@@ -174,7 +181,7 @@ public class Image implements Picture {
 
     @Override
     public String toString() {
-        return String.format("Image{path='%s', size=%dx%d, loaded=%s, disposed=%s}",
+        return format("Image{path='%s', size=%dx%d, loaded=%s, disposed=%s}",
                 path, size.width, size.height, loaded, disposed);
     }
 }

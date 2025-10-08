@@ -5,8 +5,9 @@ import java.util.Map;
 import org.jetbrains.annotations.NotNull;
 import org.useless.gui.template.Control;
 import org.useless.gui.template.Template;
-import org.useless.gui.uir.annotation.FullName;
+import org.useless.annotation.FullName;
 
+import static java.lang.System.out;
 import static org.lwjgl.glfw.GLFW.glfwCreateStandardCursor;
 import static org.lwjgl.glfw.GLFW.glfwSetCursor;
 
@@ -19,7 +20,7 @@ public class BasicTools {
 
     private BasicTools(long AREA_DECIDE) {
         BasicTools.AREA_DECIDE = AREA_DECIDE;
-        if (BasicTools.AREA_DECIDE != 0xFFFFFFFFL) System.out.println("AreaDecide!");
+        if (BasicTools.AREA_DECIDE != 0xFFFFFFFFL) out.println("AreaDecide!");
     }
 
     /**
@@ -88,6 +89,26 @@ public class BasicTools {
         }
     }
 
-
+    /**
+     * 绘制选中框<br>
+     * 闲得没事写的方法
+     * @param selected 选中状态
+     * @param control 控件
+     * @see Control
+     * @see Color
+     */
+    public static void selectionBoxDraw(boolean selected,Control control) {
+        if (selected) {
+            control.getDraw().setWireFrame(true);
+            control.getDraw().setLineWidth(3f);
+            control.getDraw().setColor(new Color(19, 0, 237, 1f));
+            control.getDraw().drawRoundedRectangle(
+                    control.getX()+3f, control.getY()+3f,
+                    control.getWidth()-(6f*2),control.getHeight()-(6f*2),
+                    control.getArcWidth(), control.getArcHeight()
+            );
+            control.getDraw().setWireFrame(false);
+        }
+    }
 
 }

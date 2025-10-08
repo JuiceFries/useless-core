@@ -1,7 +1,8 @@
 package org.useless.gui.event;
 
-import org.useless.gui.uir.annotation.FullName;
+import org.useless.annotation.FullName;
 
+@Deprecated(since = "0.0.3-Stable")
 @FullName(fullName = "EventFrequency")
 public enum EventRate {
     /// 高频事件

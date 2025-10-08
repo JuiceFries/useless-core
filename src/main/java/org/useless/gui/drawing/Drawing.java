@@ -6,7 +6,7 @@ import org.useless.gui.font.Font;
 import org.useless.gui.template.container.Window;
 import org.useless.gui.data.Location;
 import org.useless.gui.picture.Picture;
-import org.useless.gui.uir.Handle;
+import org.useless.gui.data.Handle;
 import org.useless.gui.data.Color;
 import org.useless.gui.data.Size;
 
@@ -285,6 +285,11 @@ public interface Drawing {
      * @return 文本像素宽度
      */
     float measureText(String text, Font font);
+
+    /**
+     * 测量文本宽度（指定字符间距）
+     */
+    float measureText(String text, Font font, float spacing);
 
     /**
      * 设置裁剪区域
