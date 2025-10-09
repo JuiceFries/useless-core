@@ -18,9 +18,7 @@ public class InitPhase {
     }
 
     public static void executeFrameTask() {
-        if (frameTask != null) {
-            frameTask.run();
-        }
+        if (frameTask != null) frameTask.run();
     }
 
     public static void beforeInitialization(Runnable runnable) {
@@ -32,13 +30,11 @@ public class InitPhase {
     }
 
     public static void triggerAfterInitialization(Handle handle) {
-        if (afterInitCallback != null) {
-            afterInitCallback.accept(handle);
-        }
+        if (afterInitCallback != null) afterInitCallback.accept(handle);
     }
 
     public static void triggerBeforeInitialization() {
-        beforeInit.run();
+        if (beforeInit != null ) beforeInit.run();
     }
 
 }

@@ -1,7 +1,9 @@
 package org.useless.gui.data;
 
 import java.util.function.Consumer;
+import org.useless.annotation.Useless;
 
+@Useless(isUseless = true)
 public class Scheduled implements Perform {
     private volatile boolean running;
     private final Thread thread;

@@ -43,7 +43,7 @@ public final class UIManager {
         UIManager.style = style;
     }
 
-    @Useless
+    @Useless()
     public static void applyTo(Template target) {
         if (style != null) style.apply(target);
     }

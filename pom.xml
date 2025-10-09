@@ -6,13 +6,49 @@
 
     <groupId>org.useless</groupId>
     <artifactId>useless-core</artifactId>
-    <version>0.0.4-Beta</version>
+    <version>0.0.4.1-Beta</version>
 
     <name>useless-core</name>
     <description>
         A lightweight Java UI framework based on LWJGL and NanoVG /
         基于 LWJGL 和 NanoVG 的Demo Java UI 框架
     </description>
+
+    <profiles>
+        <profile>
+            <id>windows</id>
+            <activation>
+                <os>
+                    <family>windows</family>
+                </os>
+            </activation>
+            <properties>
+                <lwjgl.natives>natives-windows</lwjgl.natives>
+            </properties>
+        </profile>
+        <profile>
+            <id>linux</id>
+            <activation>
+                <os>
+                    <family>linux</family>
+                </os>
+            </activation>
+            <properties>
+                <lwjgl.natives>natives-linux</lwjgl.natives>
+            </properties>
+        </profile>
+        <profile>
+            <id>mac</id>
+            <activation>
+                <os>
+                    <family>mac</family>
+                </os>
+            </activation>
+            <properties>
+                <lwjgl.natives>natives-macos</lwjgl.natives>
+            </properties>
+        </profile>
+    </profiles>
 
     <distributionManagement>
         <repository>

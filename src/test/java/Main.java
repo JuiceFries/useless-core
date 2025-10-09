@@ -4,11 +4,15 @@ import org.useless.gui.uir.UIManager;
 import org.useless.gui.exception.UselessCheck;
 
 public class Main {
-    public static void main(String[] args) throws UselessCheck {
+    public static void main(String[] args) throws UselessCheck, InterruptedException {
         UIManager.setUIStyle(new TintStyle());
         var window = new Window("窗口");
         window.setSize(800,600);
         window.setLocation(null);
         window.setVisible(true);
+        while (true) {
+            System.out.println(window.selectHandle().glHandle());
+            Thread.sleep(22);
+        }
     }
 }

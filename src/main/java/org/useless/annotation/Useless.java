@@ -14,8 +14,10 @@ import static java.lang.annotation.ElementType.PACKAGE;
 import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.ElementType.TYPE;
 
+@Useless(isUseless = true)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 @Target(value={CONSTRUCTOR, FIELD, LOCAL_VARIABLE, METHOD, PACKAGE, MODULE, PARAMETER, TYPE})
 public @interface Useless {
+    boolean isUseless() default false;
 }

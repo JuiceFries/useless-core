@@ -6,7 +6,9 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Objects;
 import org.jetbrains.annotations.NotNull;
+import org.useless.annotation.Useless;
 
+@Useless(isUseless = true)
 public class TernaryList<T1, T2, T3> implements Ternary<T1, T2, T3>, Serializable {
     @Serial
     private static final long serialVersionUID = 0xCAFEBABEL;
@@ -276,6 +278,7 @@ public class TernaryList<T1, T2, T3> implements Ternary<T1, T2, T3>, Serializabl
     }
 
     // 值对象记录类
+    @Useless(isUseless = true)
     public record Triplet<T1, T2, T3>(T1 first, T2 second, T3 third) {
         @Override
         public @NotNull String toString() {

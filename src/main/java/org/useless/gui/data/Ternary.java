@@ -2,6 +2,7 @@ package org.useless.gui.data;
 
 import java.util.Iterator;
 import org.jetbrains.annotations.NotNull;
+import org.useless.annotation.Useless;
 
 /**
  * 知道我为什么要脑子<br>
@@ -11,6 +12,7 @@ import org.jetbrains.annotations.NotNull;
  * @param <T2> 第二
  * @param <T3> 第三
  */
+@Useless(isUseless = true)
 public interface Ternary<T1, T2, T3> extends Iterable<Object[]> {
     void add(T1 a, T2 b, T3 c);
     void insert(int index, T1 a, T2 b, T3 c);
