@@ -45,10 +45,30 @@ I personally recommend using the window's closure method because it is simpler,
 
 but for complex drawings, it is better to override it.
 
+Cependant,
+
+la logique Windows que j'ai écrite est un peu mauvaise, 
+
+donc il vaudrait mieux directement écrire un panneau et réécrire la méthode de dessin du panneau.
+
 ````java
+import org.useless.gui.data.Color;
+import org.useless.gui.template.container.Window;
+
 public class Main {
     public static void main(String[] args) {
-        
+        Window window = new Window("window"); // window title
+        window.setSize(800, 600); // window size
+        window.setLocation(null); // center
+        window.setVisible(true); // window visible
+        window.draw(drawing -> {
+            drawing.setColor(Color.RED);
+            drawing.drawTriangle(
+                    150, 100,
+                    100, 300,
+                    200, 300
+            );
+        });
     }
 }
 ````
