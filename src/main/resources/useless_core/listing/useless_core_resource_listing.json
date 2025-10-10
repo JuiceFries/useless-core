@@ -1,0 +1,20 @@
+{
+  "fonts" : {
+    "思源黑体" : "/useless_core/font/SourceHanSansSC-Regular.otf",
+    "霞鹜文楷" : "/useless_core/font/LXGWWenKaiScreen.ttf"
+  },
+  "icons" : {
+    "di_16x" : "/useless_core/picture/di_16x16.png",
+    "di_32x" : "/useless_core/picture/di_32x32.png",
+    "di_64x" : "/useless_core/picture/di_64x64.png",
+    "JuiceFries" : "/useless_core/picture/JuiceFries.png"
+  },
+  "text" : {
+    "txt" : {
+      "hash" : "/useless_core/file/hash.text"
+    },
+    "log" : {
+      "run" : "/useless_core/file/run.log"
+    }
+  }
+}

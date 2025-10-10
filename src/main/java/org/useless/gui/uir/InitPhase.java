@@ -1,16 +1,22 @@
 package org.useless.gui.uir;
 
 import java.util.function.Consumer;
+import jdk.jfr.Experimental;
 import org.jetbrains.annotations.NotNull;
+import org.useless.annotation.Useless;
 import org.useless.gui.data.Handle;
 import org.useless.annotation.Fixed;
 
 @Fixed(continuous = "~0.2-Beta")
 @Deprecated(since = "0.0.3")
+@Useless(isUseless = true)
+@Experimental
 public class InitPhase {
 
     private static Consumer<Handle> afterInitCallback;
+    private static boolean a = false;
     private static Runnable beforeInit;
+    private static boolean b = false;
     private static Runnable frameTask;
 
     public static void operation(@NotNull Runnable runnable) {
@@ -30,11 +36,17 @@ public class InitPhase {
     }
 
     public static void triggerAfterInitialization(Handle handle) {
-        if (afterInitCallback != null) afterInitCallback.accept(handle);
+        if (afterInitCallback != null && !a) {
+            afterInitCallback.accept(handle);
+            a = true;
+        }
     }
 
     public static void triggerBeforeInitialization() {
-        if (beforeInit != null ) beforeInit.run();
+        if (beforeInit != null && !b) {
+            beforeInit.run();
+            b = true;
+        }
     }
 
 }

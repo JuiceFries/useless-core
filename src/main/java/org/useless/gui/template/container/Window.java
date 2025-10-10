@@ -173,7 +173,7 @@ public class Window implements Container, RootAgreement {
      * ui线程
      */
     @FullName(fullName = "Useless Thread Scheduling")
-    private final ExecutorService UTS = newSingleThreadExecutor();
+    protected final ExecutorService UTS = newSingleThreadExecutor();
 
     /// 事件管理器
     private EventManager eventManager;
@@ -1089,9 +1089,6 @@ public class Window implements Container, RootAgreement {
                 eventManager.processEvents();
             }
             backgroundImpl();
-
-            executeFrameTask();
-
             // NanoVG帧开始
             nvgBeginFrame(vgHandle, size.width, size.height, 1f);
 
@@ -1101,6 +1098,7 @@ public class Window implements Container, RootAgreement {
             // NanoVG帧结束
             nvgEndFrame(vgHandle);
 
+            executeFrameTask();
 
             glfwSwapBuffers(glHandle);
             // 真正的帧率限制在这里

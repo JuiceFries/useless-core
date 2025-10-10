@@ -1,18 +1,20 @@
-import org.useless.gui.template.container.Window;
-import org.useless.gui.uir.TintStyle;
-import org.useless.gui.uir.UIManager;
-import org.useless.gui.exception.UselessCheck;
+import org.useless.gui.data.Color;
+
+import static org.useless.gui.template.container.Garbage.wgc;
 
 public class Main {
-    public static void main(String[] args) throws UselessCheck, InterruptedException {
-        UIManager.setUIStyle(new TintStyle());
-        var window = new Window("窗口");
-        window.setSize(800,600);
-        window.setLocation(null);
-        window.setVisible(true);
-        while (true) {
-            System.out.println(window.selectHandle().glHandle());
-            Thread.sleep(22);
-        }
+    public static void main(String[] args) {
+        wgc.setTitle("窗口");
+        wgc.setSize(800,600);
+        wgc.setLocation(null);
+        wgc.setVisible(true);
+        wgc.draw(drawing -> {
+            drawing.setColor(Color.RED);
+            drawing.drawTriangle(
+                    150,100,
+                    100,300,
+                    200,300
+            );
+        });
     }
 }

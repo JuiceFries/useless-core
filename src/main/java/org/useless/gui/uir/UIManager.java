@@ -28,7 +28,7 @@ public final class UIManager {
     @SuppressWarnings("unused")
     private final static byte UIM = 0x00;
 
-    private static Style style = new TintStyle();
+    private static Style style = new BrunetStyle();
 
     public UIManager() {  }
 

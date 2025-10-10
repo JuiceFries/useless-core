@@ -1,5 +1,8 @@
 package org.useless.io;
 
+import jdk.jfr.Experimental;
+import org.jetbrains.annotations.NotNull;
+import org.useless.annotation.Fixed;
 import org.useless.gui.picture.Picture;
 import org.useless.gui.picture.ImageLoader;
 import org.useless.gui.exception.ImageLoadException;
@@ -16,8 +19,10 @@ import static org.useless.gui.picture.ImageLoader.loadFromMemory;
 /**
  * 用于加载文件
  */
+@Fixed(continuous = "~3-Beta")
+@Experimental
 public final class ListLoader {
-    private static final String listing_path = "/listing.json";
+    private static final String listing_path = "/useless_core/listing/useless_core_resource_listing.json";
     private static final Map<String, Picture> pictureCache = new ConcurrentHashMap<>();
     private static boolean initialized = false;
     private static JsonObject listingData;
@@ -32,6 +37,10 @@ public final class ListLoader {
             InputStream is = ListLoader.class.getResourceAsStream(listing_path);
             if (is == null) {
                 throw new RuntimeException("清单文件没找到: " + listing_path);
+            }
+
+            if (is.available() == 0) {
+                throw new RuntimeException("清单文件是空的,自己看看是不是改文件了!");
             }
 
             listingData = JsonParser.parseReader(new InputStreamReader(is)).getAsJsonObject();
@@ -68,7 +77,7 @@ public final class ListLoader {
             byte[] imageData = is.readAllBytes();
             is.close();
 
-            Picture picture = ImageLoader.loadFromMemory(imageData, name);
+            Picture picture = loadFromMemory(imageData, name);
             pictureCache.put(name, picture);
             return picture;
 
@@ -96,7 +105,7 @@ public final class ListLoader {
     /**
      * 获取所有字体映射
      */
-    public static Map<String, String> getAllFonts() {
+    public static @NotNull Map<String, String> getAllFonts() {
         if (!initialized) {
             throw new RuntimeException("ListLoader没初始化");
         }
@@ -119,7 +128,7 @@ public final class ListLoader {
     /**
      * 从classpath资源加载图片
      */
-    public static Picture loadFromResource(String resourcePath, String name) throws ImageLoadException {
+    public static @NotNull Picture loadFromResource(String resourcePath, String name) throws ImageLoadException {
         try {
             InputStream is = ImageLoader.class.getResourceAsStream(resourcePath);
             if (is == null) {
